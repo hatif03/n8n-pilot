@@ -1,0 +1,1069 @@
+---
+alwaysApply: true
+---
+
+# ADK-TS (Agent Development Kit for TypeScript) - Comprehensive Guide
+
+## Table of Contents
+1. [Overview & Introduction](#overview--introduction)
+2. [Quick Start & Installation](#quick-start--installation)
+3. [Core Concepts](#core-concepts)
+4. [Agents](#agents)
+5. [Tools](#tools)
+6. [Sessions & Memory](#sessions--memory)
+7. [Runtime & Execution](#runtime--execution)
+8. [Context Management](#context-management)
+9. [Callbacks & Event Handling](#callbacks--event-handling)
+10. [Artifacts & File Management](#artifacts--file-management)
+11. [Evaluation & Testing](#evaluation--testing)
+12. [Advanced Patterns](#advanced-patterns)
+13. [Best Practices](#best-practices)
+14. [API Reference](#api-reference)
+
+---
+
+## Overview & Introduction
+
+### What is ADK-TS?
+
+Agent Development Kit (ADK) for TypeScript is a powerful, open-source framework for **building, orchestrating, and deploying AI agents**. Inspired by Google's Python ADK, it's reimagined for the TypeScript ecosystem with first-class support for Google Gemini models while providing freedom to integrate with any LLM, tool, or data source.
+
+### Key Features
+
+- **🤖 Flexible Agent Architecture**: Compose sophisticated agentic workflows using various agent types
+- **🛠️ Extensible Tooling with MCP**: Connect to tools and services through the Model Context Protocol
+- **🧠 Multi-LLM Support**: Leverage multiple language models across providers (OpenAI, Anthropic, Google Gemini, etc.)
+- **🚀 Developer-First Experience**: TypeScript-native APIs with powerful AgentBuilder
+- **📈 Production-Ready by Design**: Built-in session management, OpenTelemetry tracing, and evaluation
+- **🌐 Easy to Deploy**: Deploy anywhere Node.js runs
+
+### What You Can Build
+
+#### Simple Agents
+```typescript
+const response = await AgentBuilder.withModel("gemini-2.5-flash").ask(
+  "Explain quantum computing in simple terms"
+);
+```
+
+#### Tool-Enhanced Agents
+```typescript
+const agent = new LlmAgent({
+  name: "researcher",
+  model: "gemini-2.5-flash",
+  tools: [new GoogleSearch(), new FileOperationsTool()],
+  instruction: "Research topics thoroughly and cite sources",
+});
+```
+
+#### Multi-Agent Workflows
+```typescript
+const workflow = await AgentBuilder.create("content_pipeline")
+  .asSequential([researchAgent, analysisAgent, summaryAgent])
+  .build();
+```
+
+#### Interactive Applications
+```typescript
+const { runner } = await AgentBuilder.create("chat_assistant")
+  .withModel("gemini-2.5-flash")
+  .withSessionService(sessionService, userId, "chat-app")
+  .build();
+```
+
+---
+
+## Quick Start & Installation
+
+### Prerequisites
+- **Node.js**: `v22.0` or higher
+- **Package Manager**: `npm`, `yarn`, or `pnpm`
+- **TypeScript**: `v5.3` or higher (optional but recommended)
+
+### Installation Methods
+
+#### Method 1: Use the CLI (Recommended)
+```bash
+npx @iqai/adk-cli new
+```
+
+#### Method 2: Manual Installation
+```bash
+npm install @iqai/adk tsx typescript dotenv
+npx tsc --init --target ES2022 --module ESNext --moduleResolution bundler --allowImportingTsExtensions --noEmit
+```
+
+### Environment Setup
+```bash
+# .env file
+GOOGLE_API_KEY=your_google_api_key_here
+```
+
+### Your First Agent
+```typescript
+// src/agents/assistant/agent.ts
+import { AgentBuilder } from "@iqai/adk";
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
+export async function agent() {
+  return await AgentBuilder.create("assistant")
+    .withModel("gemini-2.5-flash")
+    .withInstruction("You are a helpful assistant.")
+    .build();
+}
+```
+
+### Testing Your Agent
+```typescript
+// src/agents/index.ts
+import { agent } from "./assistant/agent";
+
+async function main() {
+  const { runner } = await agent();
+  const response = await runner.ask("What is the capital of France?");
+  console.log("🤖 Response:", response);
+}
+
+main().catch(console.error);
+```
+
+Run with: `npx tsx src/agents/index.ts`
+
+---
+
+## Core Concepts
+
+### Agent Architecture
+All agents in ADK-TS follow a common architecture:
+- **BaseAgent**: Abstract foundation providing lifecycle management, callbacks, and hierarchy support
+- **Agent Hierarchy**: Agents can have sub-agents, creating parent-child relationships for delegation
+- **Event-Driven Execution**: Agents communicate through events in the ADK-TS runtime
+- **Tool Integration**: Agents can use tools to extend their capabilities beyond text generation
+
+### Event System
+Events are the fundamental units of information flow within ADK-TS:
+- **User Events**: Direct input from end users
+- **Agent Events**: Responses and actions from agents
+- **Tool Events**: Function calls and their results
+- **Control Events**: State changes, control flow signals, or configuration updates
+
+### Context Management
+Context provides agents and tools with access to execution state, services, and session information:
+- **ReadonlyContext**: Safe read-only access to basic invocation information
+- **CallbackContext**: State management and artifact operations for callbacks
+- **ToolContext**: Enhanced context for tool execution with memory and authentication
+- **InvocationContext**: Complete framework access for agent implementation
+
+---
+
+## Agents
+
+### Agent Types
+
+#### 1. LLM Agents
+AI-powered agents that use language models for reasoning, conversation, tool usage, and complex decision-making.
+
+```typescript
+const agent = new LlmAgent({
+  name: "customer_support_agent",
+  model: "gemini-2.5-flash",
+  description: "Handles customer support inquiries",
+  instruction: "You are a helpful customer support agent. Be polite and professional.",
+  tools: [new WebSearchTool(), new FileOperationsTool()],
+  subAgents: [technicalAgent, billingAgent],
+  memoryService: new VectorMemoryService(),
+  sessionService: new InMemorySessionService(),
+  artifactService: new LocalArtifactService(),
+  generateContentConfig: {
+    temperature: 0.3,
+    maxOutputTokens: 1000,
+  },
+  beforeAgentCallback: (ctx) => {
+    console.log(`Starting agent: ${ctx.agentName}`);
+    return undefined;
+  },
+  afterAgentCallback: (ctx) => {
+    console.log(`Completed agent: ${ctx.agentName}`);
+    return undefined;
+  }
+});
+```
+
+#### 2. Workflow Agents
+Orchestration agents for structured processes:
+
+**Sequential Agents**: Execute agents in order
+```typescript
+const sequentialWorkflow = await AgentBuilder.create("pipeline")
+  .asSequential([researchAgent, analysisAgent, reportAgent])
+  .build();
+```
+
+**Parallel Agents**: Run multiple agents simultaneously
+```typescript
+const parallelWorkflow = await AgentBuilder.create("analysis")
+  .asParallel([sentimentAgent, topicAgent, summaryAgent])
+  .build();
+```
+
+**Loop Agents**: Repeat execution until conditions are met
+```typescript
+const loopWorkflow = await AgentBuilder.create("refinement")
+  .asLoop([problemSolver, validator], 5) // Max 5 iterations
+  .build();
+```
+
+#### 3. Custom Agents
+Build highly specialized agents by extending the BaseAgent class:
+
+```typescript
+class CustomAgent extends BaseAgent {
+  protected async *runAsyncImpl(context: InvocationContext) {
+    // Custom agent logic
+    yield* super.runAsyncImpl(context);
+  }
+}
+```
+
+### Agent Builder
+Fluent API for rapid agent creation:
+
+```typescript
+const { agent, runner, session } = await AgentBuilder.create("my-assistant")
+  .withModel("gemini-2.5-flash")
+  .withDescription("Advanced research assistant")
+  .withInstruction("You are a thorough research assistant")
+  .withTools(new WebSearchTool(), new CalculatorTool())
+  .withCodeExecutor(new PythonCodeExecutor())
+  .withMemory(new VectorMemoryService())
+  .withSessionService(new InMemorySessionService())
+  .withArtifactService(new LocalArtifactService())
+  .withOutputSchema(z.object({
+    summary: z.string(),
+    confidence: z.number(),
+    sources: z.array(z.string())
+  }))
+  .build();
+```
+
+### Models & Providers
+
+#### Option 1: Direct Model Names
+```typescript
+// Gemini (default)
+const agent = new LlmAgent({
+  name: "my_agent",
+  model: "gemini-2.5-flash", // Just need GOOGLE_API_KEY
+});
+
+// Other providers (need LLM_MODEL env var)
+const agent = new LlmAgent({
+  name: "my_agent", 
+  model: "gpt-4o", // Need LLM_MODEL=gpt-4o and OPENAI_API_KEY
+});
+```
+
+#### Option 2: Vercel AI SDK
+```typescript
+import { openai, anthropic, google } from "@ai-sdk/openai";
+
+const agent = new LlmAgent({
+  name: "my_agent",
+  model: openai("gpt-4o"), // or anthropic("claude-3-5-sonnet"), google("gemini-2.5-flash")
+});
+```
+
+---
+
+## Tools
+
+### Built-in Tools
+
+#### Google Search Tool
+```typescript
+import { GoogleSearch } from '@iqai/adk';
+
+const searchTool = new GoogleSearch();
+```
+
+#### File Operations Tool
+```typescript
+import { FileOperationsTool } from '@iqai/adk';
+
+const fileTool = new FileOperationsTool({
+  basePath: '/path/to/working/directory'
+});
+```
+
+#### HTTP Request Tool
+```typescript
+import { HttpRequestTool } from '@iqai/adk';
+
+const httpTool = new HttpRequestTool();
+```
+
+#### User Interaction Tool
+```typescript
+import { UserInteractionTool } from '@iqai/adk';
+
+const userTool = new UserInteractionTool();
+```
+
+### Function Tools
+Create custom tools for specific needs:
+
+```typescript
+import { FunctionTool } from '@iqai/adk';
+
+// Standard function tool
+const searchTool = new FunctionTool({
+  name: "search_database",
+  description: "Search internal database for information",
+  func: async (query: string) => {
+    const results = await database.search(query);
+    return { results, count: results.length };
+  }
+});
+
+// Long running function tool
+async function* processLargeFile(filePath: string) {
+  yield { status: "starting", progress: 0 };
+  
+  const chunks = await readFileInChunks(filePath);
+  for (let i = 0; i < chunks.length; i++) {
+    const processed = await processChunk(chunks[i]);
+    yield { status: "processing", progress: (i + 1) / chunks.length, chunk: processed };
+  }
+  
+  return { status: "completed", totalChunks: chunks.length };
+}
+
+const fileProcessor = new FunctionTool({
+  name: "process_large_file",
+  description: "Process large files with progress updates",
+  func: processLargeFile
+});
+
+// Agent-as-a-tool
+const specializedAgent = new LlmAgent({
+  name: "summarizer",
+  model: "gemini-2.5-flash",
+  instruction: "Summarize text concisely"
+});
+
+const summaryTool = new FunctionTool({
+  name: "summarize_text",
+  description: "Summarize text using specialized agent",
+  func: async (text: string) => {
+    const { runner } = await AgentBuilder.withAgent(specializedAgent).build();
+    return await runner.ask(text);
+  }
+});
+```
+
+### Tool Context Integration
+Tools can access rich contextual information:
+
+```typescript
+function searchAndSave(params: { query: string }, toolContext: ToolContext) {
+  // Search memory
+  const memories = await toolContext.searchMemory(params.query);
+  
+  // Save to state
+  toolContext.state.set('searchResults', memories);
+  
+  // Save artifacts
+  await toolContext.saveArtifact('search_results.json', {
+    inlineData: {
+      data: Buffer.from(JSON.stringify(memories)).toString('base64'),
+      mimeType: 'application/json'
+    }
+  });
+  
+  return { found: memories.memories?.length || 0 };
+}
+```
+
+---
+
+## Sessions & Memory
+
+### Sessions
+Manage conversational context and state:
+
+```typescript
+import { InMemorySessionService, DatabaseSessionService, VertexAiSessionService } from '@iqai/adk';
+
+// In-memory (development)
+const sessionService = new InMemorySessionService();
+
+// Database (production)
+const sessionService = new DatabaseSessionService({
+  db: database, // Kysely instance
+  skipTableCreation: false
+});
+
+// Cloud (enterprise)
+const sessionService = new VertexAiSessionService({
+  project: 'your-project',
+  location: 'us-central1',
+  agentEngineId: 'your-agent-engine'
+});
+
+// Create session with scoped state
+const session = await sessionService.createSession(
+  'travel-app',
+  'user123',
+  {
+    'current_flow': 'booking',
+    'user:preferred_language': 'es',
+    'app:booking_version': '2.1'
+  }
+);
+```
+
+### State Management
+Automatic data organization using prefix patterns:
+
+```typescript
+// State automatically organized by scope
+session.state = {
+  'current_step': 'payment',           // Session-specific
+  'user:preferred_language': 'es',     // User-specific across sessions
+  'app:feature_flags': {...},          // App-wide settings
+  'temp:api_response': {...}           // Temporary processing data
+};
+```
+
+### Memory Services
+Long-term knowledge storage:
+
+```typescript
+import { InMemoryMemoryService, VertexAiRagMemoryService } from '@iqai/adk';
+
+// Keyword-based search (development)
+const memoryService = new InMemoryMemoryService();
+
+// Semantic search (production)
+const memoryService = new VertexAiRagMemoryService(
+  'projects/project/locations/us-central1/ragCorpora/corpus-id',
+  10,   // top-k results
+  0.5   // similarity threshold
+);
+
+// Add session to memory
+await memoryService.addSessionToMemory(session);
+
+// Search memory
+const memories = await memoryService.searchMemory({
+  appName: 'travel-app',
+  userId: 'user123',
+  query: 'hotel preferences paris'
+});
+```
+
+---
+
+## Runtime & Execution
+
+### Event Loop
+The Runtime operates on events through a cooperative async generator pattern:
+
+```typescript
+import { LlmAgent, Runner, InMemorySessionService } from '@iqai/adk';
+
+const agent = new LlmAgent({
+  name: "assistant",
+  model: "gemini-2.5-flash",
+  description: "A helpful assistant",
+  instruction: "You are a helpful assistant"
+});
+
+const sessionService = new InMemorySessionService();
+const session = await sessionService.createSession("my_app", "user_123");
+
+const runner = new Runner({
+  appName: "my_app",
+  agent,
+  sessionService
+});
+
+// Process user input through the runtime
+for await (const event of runner.runAsync({
+  userId: "user_123",
+  sessionId: session.id,
+  newMessage: { parts: [{ text: "Hello!" }] }
+})) {
+  console.log('Event:', event.author, event.content?.parts);
+}
+```
+
+### Invocation Lifecycle
+Complete lifecycle from user query to response completion:
+
+1. **User Input** → Creates user event
+2. **Agent Processing** → Generates agent events with text or tool calls
+3. **Tool Execution** → Creates tool response events
+4. **State Updates** → Tracked via event actions
+5. **Final Response** → Delivered as final event ready for display
+
+---
+
+## Context Management
+
+### Context Types
+
+#### ReadonlyContext
+Safe read-only access to basic invocation information:
+
+```typescript
+const dynamicInstruction = (ctx: ReadonlyContext): string => {
+  const userState = ctx.state;
+  return `You are helping user in session ${ctx.invocationId}. User context: ${JSON.stringify(userState)}`;
+};
+```
+
+#### CallbackContext
+State management and artifact operations for callbacks:
+
+```typescript
+const beforeAgentCallback = (callbackContext: CallbackContext) => {
+  // Update interaction count in state
+  const currentCount = callbackContext.state.get('interaction_count') || 0;
+  callbackContext.state.set('interaction_count', currentCount + 1);
+  
+  // Save artifact
+  await callbackContext.saveArtifact('config.json', configArtifact);
+  
+  return undefined;
+};
+```
+
+#### ToolContext
+Enhanced context for tool execution:
+
+```typescript
+function searchAndSave(params: { query: string }, toolContext: ToolContext) {
+  // Search memory
+  const memories = await toolContext.searchMemory(params.query);
+  
+  // Save to state
+  toolContext.state.set('searchResults', memories);
+  
+  // List artifacts
+  const availableFiles = await toolContext.listArtifacts();
+  
+  return { found: memories.memories?.length || 0 };
+}
+```
+
+---
+
+## Callbacks & Event Handling
+
+### Callback Types
+
+#### Agent Lifecycle Callbacks
+```typescript
+const beforeAgentCallback = (callbackContext: CallbackContext) => {
+  console.log(`Starting agent: ${callbackContext.agentName}`);
+  return undefined; // Continue execution
+};
+
+const afterAgentCallback = (callbackContext: CallbackContext) => {
+  console.log(`Completed agent: ${callbackContext.agentName}`);
+  return undefined; // Use agent's output
+};
+```
+
+#### Model Interaction Callbacks
+```typescript
+const beforeModelCallback = ({ callbackContext, llmRequest }: {
+  callbackContext: CallbackContext;
+  llmRequest: LlmRequest;
+}): LlmResponse | undefined => {
+  // Check for blocked content
+  const lastMessage = llmRequest.contents?.[llmRequest.contents.length - 1]?.parts?.[0]?.text || "";
+  
+  if (lastMessage.toLowerCase().includes("blocked")) {
+    return new LlmResponse({
+      content: {
+        role: "model",
+        parts: [{ text: "I cannot process requests containing blocked content." }]
+      }
+    });
+  }
+  
+  return undefined; // Proceed with normal LLM call
+};
+
+const afterModelCallback = (ctx: CallbackContext, response: LlmResponse) => {
+  console.log(`LLM response length: ${response.content.parts[0]?.text?.length || 0} characters`);
+  return null; // Use original response
+};
+```
+
+#### Tool Execution Callbacks
+```typescript
+const beforeToolCallback = (tool, args, ctx) => {
+  console.log(`Executing tool: ${tool.name}`);
+  return null; // Use original args
+};
+
+const afterToolCallback = (tool, args, ctx, response) => {
+  console.log(`Tool ${tool.name} completed successfully`);
+  return null; // Use original response
+};
+```
+
+### Event Actions
+Control agent behavior and state:
+
+```typescript
+import { Event, EventActions } from '@iqai/adk';
+
+const event = new Event({
+  author: 'user',
+  content: { parts: [{ text: 'I want to book a hotel in Paris' }] },
+  actions: new EventActions({
+    stateDelta: {
+      'destination': 'paris',
+      'user:recent_searches': ['paris', 'hotels'],
+      'temp:search_timestamp': Date.now()
+    },
+    transferToAgent: 'booking_agent', // Transfer control
+    skipSummarization: true, // Skip LLM processing
+    escalate: false // Don't escalate to parent
+  }),
+  timestamp: Date.now() / 1000
+});
+```
+
+---
+
+## Artifacts & File Management
+
+### Basic Artifact Operations
+```typescript
+import { InMemoryArtifactService } from '@iqai/adk';
+
+const artifactService = new InMemoryArtifactService();
+
+const beforeAgentCallback = async (callbackContext: CallbackContext) => {
+  // Save a text artifact
+  const textArtifact = {
+    inlineData: {
+      data: Buffer.from('Hello, World!').toString('base64'),
+      mimeType: 'text/plain'
+    }
+  };
+
+  const version = await callbackContext.saveArtifact('greeting.txt', textArtifact);
+  console.log(`Saved greeting.txt version ${version}`);
+
+  // Load an existing artifact
+  const loadedArtifact = await callbackContext.loadArtifact('greeting.txt');
+  if (loadedArtifact) {
+    const text = Buffer.from(loadedArtifact.inlineData.data, 'base64').toString();
+    console.log(`Loaded text: ${text}`);
+  }
+
+  return undefined;
+};
+```
+
+### Artifact Scoping
+```typescript
+// Session-specific artifacts
+await callbackContext.saveArtifact('temp_processing.csv', csvArtifact);
+
+// User-specific artifacts (persist across sessions)
+await callbackContext.saveArtifact('user:profile_picture.png', imageArtifact);
+```
+
+### Versioning System
+```typescript
+// First save - creates version 0
+const v0 = await callbackContext.saveArtifact('document.txt', textArtifact1);
+
+// Second save - creates version 1
+const v1 = await callbackContext.saveArtifact('document.txt', textArtifact2);
+
+// Load specific version
+const oldVersion = await callbackContext.loadArtifact('document.txt', 0);
+
+// Load latest version (default)
+const latestVersion = await callbackContext.loadArtifact('document.txt');
+```
+
+### Auto-save Input Blobs
+```typescript
+const agent = agentBuilder()
+  .name('artifact_agent')
+  .model('gemini-2.5-flash')
+  .withRunConfig({ saveInputBlobsAsArtifacts: true })
+  .build();
+
+const runner = new Runner({
+  appName: 'my_app',
+  agent,
+  sessionService: new InMemorySessionService(),
+  artifactService: new InMemoryArtifactService(),
+});
+```
+
+---
+
+## Evaluation & Testing
+
+### Agent Evaluator
+```typescript
+import { AgentBuilder, AgentEvaluator } from '@iqai/adk';
+
+const { agent } = await AgentBuilder.create('eval_agent')
+  .withModel('gemini-2.5-flash')
+  .withInstruction('Answer briefly and accurately.')
+  .build();
+
+// Evaluate with test cases
+await AgentEvaluator.evaluate(agent, './evaluation/tests');
+```
+
+### Test Configuration
+```json
+// test_config.json
+{
+  "criteria": {
+    "response_match_score": 0.8,
+    "tool_trajectory_avg_score": 1.0,
+    "response_evaluation_score": 0.7,
+    "safety_v1": 0.9
+  }
+}
+```
+
+### EvalSet Format
+```json
+{
+  "evalSetId": "calc-v1",
+  "name": "Simple arithmetic",
+  "creationTimestamp": 0,
+  "evalCases": [
+    {
+      "evalId": "case-1",
+      "conversation": [
+        {
+          "creationTimestamp": 0,
+          "userContent": { "role": "user", "parts": [{ "text": "What is 2 + 2?" }] },
+          "finalResponse": { "role": "model", "parts": [{ "text": "4" }] }
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Advanced Patterns
+
+### Multi-Agent Systems
+```typescript
+// Create specialized agents
+const emailAgent = new LlmAgent({
+  name: "email_specialist",
+  model: "gemini-2.5-flash",
+  instruction: "Handle email-related tasks"
+});
+
+const calendarAgent = new LlmAgent({
+  name: "calendar_specialist", 
+  model: "gemini-2.5-flash",
+  instruction: "Manage calendar and scheduling"
+});
+
+// Coordinator agent
+const assistantAgent = new LlmAgent({
+  name: "personal_assistant",
+  model: "gemini-2.5-flash",
+  subAgents: [emailAgent, calendarAgent],
+  instruction: "Route tasks to appropriate specialists. Use email_specialist for email tasks and calendar_specialist for scheduling."
+});
+```
+
+### Custom Agent Implementation
+```typescript
+class CustomAgent extends BaseAgent {
+  constructor(config: CustomAgentConfig) {
+    super(config);
+  }
+
+  protected async *runAsyncImpl(context: InvocationContext) {
+    // Custom preprocessing
+    const userMessage = context.session.events[context.session.events.length - 1];
+    
+    // Custom logic
+    if (this.shouldUseCustomLogic(userMessage)) {
+      yield* this.customProcessing(context);
+    } else {
+      yield* super.runAsyncImpl(context);
+    }
+    
+    // Custom postprocessing
+    this.updateCustomState(context);
+  }
+
+  private shouldUseCustomLogic(message: any): boolean {
+    // Custom decision logic
+    return message.content?.parts?.[0]?.text?.includes('custom');
+  }
+
+  private async *customProcessing(context: InvocationContext) {
+    // Custom processing logic
+    yield new Event({
+      author: this.name,
+      content: { role: 'model', parts: [{ text: 'Custom processing complete' }] },
+      actions: new EventActions()
+    });
+  }
+}
+```
+
+### Tool Composition
+```typescript
+// Sequential tool processing
+const processDocument = async (documentPath: string, toolContext: ToolContext) => {
+  // Step 1: Load document
+  const document = await toolContext.loadArtifact(documentPath);
+  
+  // Step 2: Extract text
+  const text = Buffer.from(document.inlineData.data, 'base64').toString();
+  
+  // Step 3: Analyze content
+  const analysis = await analyzeText(text);
+  
+  // Step 4: Save results
+  await toolContext.saveArtifact('analysis.json', {
+    inlineData: {
+      data: Buffer.from(JSON.stringify(analysis)).toString('base64'),
+      mimeType: 'application/json'
+    }
+  });
+  
+  return { analysis, saved: true };
+};
+```
+
+---
+
+## Best Practices
+
+### Agent Design
+- **Clear Instructions**: Write specific, actionable instructions
+- **Appropriate Tools**: Choose tools that match your use case
+- **Error Handling**: Implement graceful error handling
+- **State Management**: Use appropriate state scoping patterns
+
+### Tool Development
+- **Function Design**: Use descriptive, action-oriented names
+- **Error Handling**: Include clear success/error indicators
+- **Documentation**: Write comprehensive JSDoc comments
+- **Testing**: Test tools independently and with agents
+
+### Performance Optimization
+- **Async Operations**: Use async/await for non-blocking operations
+- **Resource Management**: Implement proper cleanup and resource management
+- **Caching**: Cache frequently accessed data
+- **Rate Limiting**: Respect external service limits
+
+### Security Considerations
+- **Input Validation**: Validate all inputs and sanitize data
+- **Access Control**: Implement appropriate access restrictions
+- **Error Information**: Avoid exposing sensitive data in error messages
+- **Audit Logging**: Log important operations for security monitoring
+
+### Production Deployment
+- **Environment Configuration**: Use environment variables for configuration
+- **Service Selection**: Choose appropriate implementations for your scale
+- **Monitoring**: Implement comprehensive logging and monitoring
+- **Error Recovery**: Design robust error recovery strategies
+
+---
+
+## API Reference
+
+### Core Classes
+
+#### AgentBuilder
+```typescript
+class AgentBuilder {
+  static create(name: string): AgentBuilder;
+  static withModel(model: string | BaseLlm | LanguageModel): AgentBuilder;
+  static withAgent(agent: BaseAgent): AgentBuilder;
+  
+  withModel(model: string | BaseLlm | LanguageModel): AgentBuilder;
+  withDescription(description: string): AgentBuilder;
+  withInstruction(instruction: string | InstructionProvider): AgentBuilder;
+  withTools(...tools: ToolUnion[]): AgentBuilder;
+  withCodeExecutor(executor: BaseCodeExecutor): AgentBuilder;
+  withMemory(service: BaseMemoryService): AgentBuilder;
+  withSessionService(service: BaseSessionService): AgentBuilder;
+  withArtifactService(service: BaseArtifactService): AgentBuilder;
+  withOutputSchema(schema: ZodSchema): AgentBuilder;
+  
+  asSequential(agents: BaseAgent[]): AgentBuilder;
+  asParallel(agents: BaseAgent[]): AgentBuilder;
+  asLoop(agents: BaseAgent[], maxIterations: number): AgentBuilder;
+  asLangGraph(nodes: LangGraphNode[], startNode: string): AgentBuilder;
+  
+  build(): Promise<{ agent: BaseAgent; runner: Runner; session?: Session }>;
+  ask(message: string): Promise<string>;
+}
+```
+
+#### LlmAgent
+```typescript
+class LlmAgent extends BaseAgent {
+  constructor(config: {
+    name: string;
+    description?: string;
+    model?: string | BaseLlm | LanguageModel;
+    instruction?: string | InstructionProvider;
+    globalInstruction?: string | InstructionProvider;
+    tools?: ToolUnion[];
+    subAgents?: BaseAgent[];
+    codeExecutor?: BaseCodeExecutor;
+    planner?: BasePlanner;
+    memoryService?: BaseMemoryService;
+    sessionService?: BaseSessionService;
+    artifactService?: BaseArtifactService;
+    includeContents?: "default" | "none";
+    outputKey?: string;
+    inputSchema?: ZodSchema;
+    outputSchema?: ZodSchema;
+    generateContentConfig?: GenerateContentConfig;
+    disallowTransferToParent?: boolean;
+    disallowTransferToPeers?: boolean;
+    userId?: string;
+    appName?: string;
+    beforeAgentCallback?: BeforeAgentCallback;
+    afterAgentCallback?: AfterAgentCallback;
+    beforeModelCallback?: BeforeModelCallback;
+    afterModelCallback?: AfterModelCallback;
+    beforeToolCallback?: BeforeToolCallback;
+    afterToolCallback?: AfterToolCallback;
+  });
+}
+```
+
+#### Runner
+```typescript
+class Runner {
+  constructor(config: {
+    appName: string;
+    agent: BaseAgent;
+    sessionService?: BaseSessionService;
+    artifactService?: BaseArtifactService;
+    memoryService?: BaseMemoryService;
+  });
+  
+  async runAsync(params: {
+    userId: string;
+    sessionId: string;
+    newMessage: Content;
+    runConfig?: RunConfig;
+  }): AsyncGenerator<Event, void, unknown>;
+  
+  async ask(message: string | Content): Promise<string>;
+}
+```
+
+### Services
+
+#### SessionService
+```typescript
+interface BaseSessionService {
+  createSession(appName: string, userId: string, initialState?: Record<string, any>): Promise<Session>;
+  getSession(sessionId: string): Promise<Session | null>;
+  appendEvent(session: Session, event: Event): Promise<void>;
+  updateSessionState(session: Session, stateDelta: Record<string, any>): Promise<void>;
+}
+```
+
+#### MemoryService
+```typescript
+interface BaseMemoryService {
+  addSessionToMemory(session: Session): Promise<void>;
+  searchMemory(params: {
+    appName: string;
+    userId: string;
+    query: string;
+  }): Promise<{ memories: Memory[] }>;
+}
+```
+
+#### ArtifactService
+```typescript
+interface BaseArtifactService {
+  saveArtifact(sessionId: string, filename: string, artifact: Part): Promise<number>;
+  loadArtifact(sessionId: string, filename: string, version?: number): Promise<Part | null>;
+  listArtifacts(sessionId: string): Promise<string[]>;
+}
+```
+
+### Tools
+
+#### FunctionTool
+```typescript
+class FunctionTool extends BaseTool {
+  constructor(config: {
+    name: string;
+    description: string;
+    func: Function;
+    parameters?: ZodSchema;
+  });
+  
+  static fromFunction(func: Function, description: string): FunctionTool;
+}
+```
+
+#### Built-in Tools
+```typescript
+class GoogleSearch extends BaseTool;
+class FileOperationsTool extends BaseTool;
+class HttpRequestTool extends BaseTool;
+class UserInteractionTool extends BaseTool;
+class LoadMemoryTool extends BaseTool;
+class LoadArtifactsTool extends BaseTool;
+```
+
+### Context Objects
+
+#### CallbackContext
+```typescript
+class CallbackContext {
+  agentName: string;
+  invocationId: string;
+  state: StateManager;
+  
+  saveArtifact(filename: string, artifact: Part): Promise<number>;
+  loadArtifact(filename: string, version?: number): Promise<Part | null>;
+  listArtifacts(): Promise<string[]>;
+}
+```
+
+#### ToolContext
+```typescript
+class ToolContext extends CallbackContext {
+  functionCallId: string;
+  
+  searchMemory(query: string): Promise<{ memories: Memory[] }>;
+  requestCredential(credentialId: string): Promise<Credential>;
+}
+```
+
+---
+
+This comprehensive guide covers all the essential aspects of ADK-TS, from basic concepts to advanced patterns. Use it as a reference for building sophisticated AI agent applications with TypeScript.
