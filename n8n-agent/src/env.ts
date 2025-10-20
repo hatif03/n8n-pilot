@@ -16,6 +16,8 @@ export const envSchema = z.object({
 	GOOGLE_API_KEY: z.string(),
 	TELEGRAM_BOT_TOKEN: z.string(),
 	LLM_MODEL: z.string().default("gemini-2.5-flash"),
+	N8N_API_URL: z.string().optional(),
+	N8N_API_KEY: z.string().optional(),
 });
 
 /**

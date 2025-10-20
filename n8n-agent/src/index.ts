@@ -13,19 +13,32 @@ dotenv.config();
  */
 
 async function main() {
-	console.log("🤖 Initializing Telegram bot agent...");
+	console.log("🤖 Initializing Telegram bot agent with n8n workflow capabilities...");
 
 	try {
-		const { runner } = await getRootAgent();
+		// Create a temporary sampling handler for initialization
+		const tempSamplingHandler = createSamplingHandler(async () => "Initializing...");
 
-		// Create sampling handler for the Telegram MCP
+		// Initialize Telegram toolset first
+		await getTelegramAgent(tempSamplingHandler);
+
+		// Now create the root agent with the proper sampling handler
+		const { runner } = await getRootAgent(tempSamplingHandler);
+
+		// Create the final sampling handler for the Telegram MCP
 		const samplingHandler = createSamplingHandler(runner.ask);
 
-		// Initialize Telegram toolset
+		// Re-initialize Telegram toolset with the proper sampling handler
 		await getTelegramAgent(samplingHandler);
 
-		console.log("✅ Telegram bot agent initialized successfully!");
+		console.log("✅ Telegram bot agent with n8n workflow capabilities initialized successfully!");
 		console.log("🚀 Bot is now running and ready to receive messages...");
+		console.log("📋 Available commands:");
+		console.log("   - Tell me a joke");
+		console.log("   - What's the weather in [city]?");
+		console.log("   - Create a workflow that [description]");
+		console.log("   - List available n8n nodes");
+		console.log("   - Help with n8n workflow creation");
 
 		// Keep the process running
 		await keepAlive();
