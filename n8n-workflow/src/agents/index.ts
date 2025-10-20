@@ -14,5 +14,3 @@ export { WorkflowBuilderAgent } from './workflow-builder';
 export { WorkflowOptimizerAgent } from './workflow-optimizer';
 export { WorkflowValidatorAgent } from './workflow-validator';
 
-// Legacy exports for backward compatibility
-export { getRootAgent } from './agent';
