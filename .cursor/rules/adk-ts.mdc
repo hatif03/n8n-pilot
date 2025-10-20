@@ -1,7 +1,6 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
-
 # ADK-TS (Agent Development Kit for TypeScript) - Comprehensive Guide
 
 ## Table of Contents
