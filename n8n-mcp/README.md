@@ -1,245 +1,234 @@
 # n8n MCP Server
 
-A Model Context Protocol (MCP) server for building and managing n8n workflows using FastMCP. This server provides AI-friendly tools for creating, editing, and managing n8n automation workflows programmatically.
+A comprehensive Model Context Protocol (MCP) server for building and managing n8n workflows using FastMCP. This server provides AI assistants with deep knowledge about n8n's workflow automation platform and enables them to create, manage, and validate n8n workflows programmatically.
 
-## Features
+## 🚀 Features
 
-- **Workflow Management**: Create, edit, delete, and validate n8n workflows
-- **Node Operations**: Add, edit, and remove nodes in workflows
-- **Connection Management**: Create and manage connections between nodes
-- **Node Discovery**: Explore available n8n node types and their capabilities
-- **AI Workflow Composition**: Build complex AI workflows with agents, models, memory, and tools
-- **Version Support**: Automatic n8n version detection and compatibility handling
+### Core Workflow Management
+- **Create Workflows**: Build new n8n workflows with proper structure and validation
+- **List & Search**: Discover and filter workflows in your n8n instance
+- **Get Details**: Retrieve comprehensive workflow information including nodes and connections
+- **Delete Workflows**: Safely remove workflows with confirmation
+- **Validate Workflows**: Comprehensive validation with error detection and fix suggestions
 
-## Installation
+### Advanced Node Management
+- **Add Nodes**: Insert new nodes into workflows with proper configuration
+- **Edit Nodes**: Modify existing node parameters and settings
+- **Delete Nodes**: Remove nodes while maintaining workflow integrity
+- **Discover Nodes**: List and search through 500+ available n8n node types
+- **Version Info**: Get current n8n version and capability information
 
-### Prerequisites
+### Connection Management
+- **Add Connections**: Create data flow connections between nodes
+- **Remove Connections**: Break connections while preserving workflow structure
+- **AI Connections**: Wire AI components to agents and models
 
-- Node.js (v14 or higher)
-- npm or pnpm
+### AI Workflow Composition
+- **Compose AI Workflows**: Build complete AI workflows with agents, models, memory, and tools
+- **Template Generation**: Create workflows from common patterns and templates
+- **Smart Suggestions**: Get recommendations for workflow improvements
 
-### Setup
+### Enhanced Validation & Error Handling
+- **Comprehensive Validation**: Check workflow structure, node configurations, and connections
+- **Error Detection**: Identify common issues and provide fix suggestions
+- **Best Practices**: Enforce n8n workflow best practices and conventions
 
-1. Clone or navigate to the n8n-mcp directory:
-   ```bash
-   cd n8n-mcp
-   ```
+## 📦 Installation
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Build the project:
-   ```bash
-   npm run build
-   ```
-
-## Usage
-
-### Running the Server
-
-#### Development Mode
 ```bash
-npm run dev
-```
+# Install dependencies
+npm install
 
-#### Production Mode
-```bash
+# Build the project
+npm run build
+
+# Start the server
 npm start
 ```
 
-#### Using MCP Inspector
+## 🛠️ Development
+
 ```bash
-npm run inspect
+# Start development server with hot reload
+npm run dev
+
+# Build the project
+npm run build
+
+# Start production server
+npm start
+
+# Run tests
+npm test
 ```
 
-### Integration with MCP Clients
+## 🔧 Configuration
 
-Add the following configuration to your MCP client (e.g., Cursor IDE):
+### Environment Variables
+
+Set the following environment variables for full n8n integration:
+
+```bash
+# Required for n8n API integration
+N8N_API_URL=https://your-n8n-instance.com
+N8N_API_KEY=your-api-key
+
+# Optional configuration
+N8N_API_TIMEOUT=30000
+N8N_API_MAX_RETRIES=3
+LOG_LEVEL=info
+DISABLE_CONSOLE_OUTPUT=false
+```
+
+### MCP Client Configuration
+
+Add to your MCP client configuration (e.g., Claude Desktop):
 
 ```json
 {
   "mcpServers": {
-    "n8n-mcp-server": {
+    "n8n-mcp": {
       "command": "node",
-      "args": ["/path/to/n8n-mcp/dist/index.js"],
+      "args": ["dist/index.js"],
       "env": {
-        "N8N_API_URL": "http://localhost:5678",
-        "N8N_API_KEY": "your-n8n-api-key-here"
+        "N8N_API_URL": "https://your-n8n-instance.com",
+        "N8N_API_KEY": "your-api-key",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true"
       }
     }
   }
 }
 ```
 
-## Available Tools
+## 🎯 Usage
 
-### Workflow Management
+The server provides 14 comprehensive tools organized into categories:
 
-| Tool Name | Description | Key Parameters |
-|-----------|-------------|----------------|
-| `create_workflow` | Create a new n8n workflow | `workflow_name`, `description`, `active` |
-| `list_workflows` | List all workflows in the workspace | `limit`, `cursor` |
-| `get_workflow_details` | Get detailed information about a workflow | `workflow_name` |
-| `delete_workflow` | Delete a workflow | `workflow_name` |
-| `validate_workflow` | Validate workflow structure and connectivity | `workflow_name` |
+### Workflow Management Tools (5)
+- `create_workflow` - Create a new n8n workflow with validation
+- `list_workflows` - List all workflows with filtering and pagination
+- `get_workflow_details` - Get detailed workflow information including nodes and connections
+- `delete_workflow` - Delete a workflow with confirmation
+- `validate_workflow` - Validate workflow structure, connections, and node configurations
 
-### Node Management
+### Node Management Tools (5)
+- `add_node` - Add a new node to a workflow with proper configuration
+- `edit_node` - Edit existing node parameters and settings
+- `delete_node` - Remove a node from a workflow
+- `list_available_nodes` - Discover available n8n node types with filtering
+- `get_n8n_version_info` - Get current n8n version and capabilities
 
-| Tool Name | Description | Key Parameters |
-|-----------|-------------|----------------|
-| `add_node` | Add a new node to a workflow | `workflow_name`, `node_type`, `position`, `parameters` |
-| `edit_node` | Edit an existing node in a workflow | `workflow_name`, `node_id`, `node_name`, `parameters` |
-| `delete_node` | Delete a node from a workflow | `workflow_name`, `node_id` |
-| `list_available_nodes` | List available n8n node types | `search_term`, `n8n_version`, `limit` |
-| `get_n8n_version_info` | Get n8n version and capabilities | - |
+### Connection Management Tools (3)
+- `add_connection` - Create connections between workflow nodes
+- `remove_connection` - Remove connections between nodes
+- `add_ai_connections` - Wire AI components to agents and models
 
-### Connection Management
+### AI Workflow Tools (1)
+- `compose_ai_workflow` - Create complete AI workflows with agents, models, memory, and tools
 
-| Tool Name | Description | Key Parameters |
-|-----------|-------------|----------------|
-| `add_connection` | Create a connection between two nodes | `workflow_name`, `source_node_id`, `target_node_id` |
-| `remove_connection` | Remove a connection between nodes | `workflow_name`, `source_node_id`, `target_node_id` |
-| `add_ai_connections` | Wire AI components to an agent | `workflow_name`, `agent_node_id`, `model_node_id` |
+### System Tools (2)
+- `get_system_info` - Get system information and configuration status
+- `get_tool_documentation` - Get detailed documentation for specific tools
 
-### AI Workflow Tools
+## 🔍 Validation Features
 
-| Tool Name | Description | Key Parameters |
-|-----------|-------------|----------------|
-| `compose_ai_workflow` | Create a complete AI workflow | `workflow_name`, `plan`, `n8n_version` |
+The server includes comprehensive validation capabilities:
 
-## Examples
+- **Workflow Structure**: Validates workflow name, nodes, and basic structure
+- **Node Configuration**: Checks required fields, parameters, and credentials
+- **Connection Validation**: Ensures connections reference valid nodes and outputs
+- **Expression Validation**: Validates n8n expressions and syntax
+- **Best Practices**: Enforces n8n workflow conventions and patterns
 
-### Creating a Simple Workflow
+## 🚨 Safety Features
 
-```typescript
-// Create a new workflow
-await createWorkflow({
-  workflow_name: "my-automation",
-  description: "A simple automation workflow",
-  active: false
-});
+- **Validation First**: All workflows are validated before creation or updates
+- **Error Handling**: Comprehensive error detection with actionable suggestions
+- **Backup Recommendations**: Suggests making backups before modifications
+- **Development Mode**: Encourages testing in development environments
 
-// Add a webhook trigger
-await addNode({
-  workflow_name: "my-automation",
-  node_type: "n8n-nodes-base.webhook",
-  position: [100, 100],
-  parameters: {
-    httpMethod: "POST",
-    path: "my-webhook"
+## 📚 Examples
+
+### Creating a Simple Webhook Workflow
+
+```javascript
+// Create a webhook to Slack workflow
+const workflow = {
+  name: "Webhook to Slack",
+  nodes: [
+    {
+      id: "webhook_1",
+      name: "Webhook",
+      type: "n8n-nodes-base.webhook",
+      typeVersion: 1,
+      position: [250, 300],
+      parameters: {
+        httpMethod: "POST",
+        path: "slack-notify"
+      }
+    },
+    {
+      id: "slack_1",
+      name: "Slack",
+      type: "n8n-nodes-base.slack",
+      typeVersion: 1,
+      position: [450, 300],
+      parameters: {
+        resource: "message",
+        operation: "post",
+        channel: "#general",
+        text: "New webhook received!"
+      }
+    }
+  ],
+  connections: {
+    "webhook_1": {
+      "main": [[{
+        "node": "slack_1",
+        "type": "main",
+        "index": 0
+      }]]
+    }
   }
-});
-
-// Add an HTTP request node
-await addNode({
-  workflow_name: "my-automation",
-  node_type: "n8n-nodes-base.httpRequest",
-  position: [400, 100],
-  parameters: {
-    method: "GET",
-    url: "https://api.example.com/data"
-  }
-});
-
-// Connect the nodes
-await addConnection({
-  workflow_name: "my-automation",
-  source_node_id: "webhook-node-id",
-  source_node_output_name: "main",
-  target_node_id: "http-node-id",
-  target_node_input_name: "main"
-});
+};
 ```
 
-### Creating an AI Workflow
+### Validating a Workflow
 
-```typescript
-// Create a complete AI workflow
-await composeAiWorkflow({
-  workflow_name: "ai-assistant",
-  plan: "Create an AI assistant that can answer questions and store memories",
-  n8n_version: "1.108.0"
-});
+```javascript
+// Validate workflow before creating
+const validation = await validateWorkflow(workflow);
+if (!validation.isValid) {
+  console.log("Validation errors:", validation.errors);
+  console.log("Suggestions:", validation.suggestions);
+}
 ```
 
-## Project Structure
+## 🏗️ Architecture
 
-```
-n8n-mcp/
-├── src/
-│   ├── lib/
-│   │   └── workflow-utils.ts      # Workflow utility functions
-│   ├── services/
-│   │   ├── workflow-service.ts    # Workflow management service
-│   │   └── node-discovery-service.ts # Node discovery service
-│   ├── tools/
-│   │   ├── workflow-tools.ts      # Workflow management tools
-│   │   ├── node-tools.ts          # Node management tools
-│   │   ├── connection-tools.ts    # Connection management tools
-│   │   └── ai-workflow-tools.ts   # AI workflow composition tools
-│   ├── types.ts                   # TypeScript type definitions
-│   └── index.ts                   # Main server entry point
-├── dist/                          # Compiled JavaScript output
-├── package.json
-└── README.md
-```
+The server is built with a modular architecture:
 
-## Configuration
+- **FastMCP Framework**: Provides the MCP protocol implementation
+- **Service Layer**: Handles n8n API integration and business logic
+- **Validation Layer**: Comprehensive workflow and node validation
+- **Tool Layer**: Individual tool implementations for specific operations
+- **Utility Layer**: Common utilities for logging, validation, and configuration
 
-### Environment Variables
-
-- `N8N_API_URL`: URL of your n8n instance (default: `http://localhost:5678`)
-- `N8N_API_KEY`: API key for n8n authentication
-- `N8N_VERSION`: Specific n8n version to use (optional, auto-detected if not set)
-
-### Workflow Storage
-
-Workflows are stored in the `./workflows` directory by default. Each workflow is saved as a JSON file with the workflow name as the filename.
-
-## Development
-
-### Building
-
-```bash
-npm run build
-```
-
-### Watching for Changes
-
-```bash
-npm run watch
-```
-
-### Testing
-
-```bash
-npm run dev
-```
-
-## Dependencies
-
-- **fastmcp**: FastMCP framework for building MCP servers
-- **zod**: Schema validation
-- **uuid**: UUID generation for workflow and node IDs
-- **node-fetch**: HTTP requests for n8n API integration
-- **ajv**: JSON schema validation
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Add tests for new functionality
 5. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License
+MIT License - see LICENSE file for details
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
-- Built with [FastMCP](https://github.com/punkpeye/fastmcp)
-- Inspired by the [n8n-workflow-builder-mcp](https://github.com/ifmelate/n8n-workflow-builder-mcp) project
-- Uses the [Model Context Protocol](https://modelcontextprotocol.io/) specification
+- Built with [FastMCP](https://github.com/punkpeye/fastmcp) framework
+- Inspired by the comprehensive [n8n-mcp-main](https://github.com/czlonkowski/n8n-mcp) project
+- Uses [n8n](https://github.com/n8n-io/n8n) workflow automation platform

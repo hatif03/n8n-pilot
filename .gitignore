@@ -48,5 +48,5 @@ dev-debug.log
 .vscode
 # OS specific
 
-n8n-workflow-builder-mcp-main/
-n8n-mcp-main/
+# n8n-workflow-builder-mcp-main/
+# n8n-mcp-main/

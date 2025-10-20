@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { FastMCP } from "fastmcp";
+import { z } from "zod";
+import { logger } from "./utils/logger.js";
+import { isN8nApiConfigured } from "./config/n8n-api.js";
 
 // Import workflow tools
 import {
@@ -30,6 +33,24 @@ import {
 import {
   composeAiWorkflowTool,
 } from "./tools/ai-workflow-tools.js";
+
+// Import template tools
+import {
+  templateTools,
+} from "./tools/template-tools.js";
+
+// Import advanced services tools
+import {
+  getNodeExamplesTool,
+  searchNodeExamplesTool,
+  validateNodeConfigurationTool,
+  scoreResourceLocatorTool,
+  scoreNodeTypeSuggestionTool,
+  scoreWorkflowValidationTool,
+  analyzePropertyDependenciesTool,
+  getPropertyGroupsTool,
+  validatePropertyConfigurationTool,
+} from "./tools/advanced-services-tools.js";
 
 /**
  * Initializes and starts the n8n MCP (Model Context Protocol) Server.
@@ -80,15 +101,96 @@ for building automation workflows programmatically.`,
 	// Add AI workflow tools
 	server.addTool(composeAiWorkflowTool);
 
+	// Add template management tools
+	templateTools.forEach(tool => server.addTool(tool));
+
+	// Add advanced services tools
+	server.addTool(getNodeExamplesTool);
+	server.addTool(searchNodeExamplesTool);
+	server.addTool(validateNodeConfigurationTool);
+	server.addTool(scoreResourceLocatorTool);
+	server.addTool(scoreNodeTypeSuggestionTool);
+	server.addTool(scoreWorkflowValidationTool);
+	server.addTool(analyzePropertyDependenciesTool);
+	server.addTool(getPropertyGroupsTool);
+	server.addTool(validatePropertyConfigurationTool);
+
+	// Add system information tool
+	server.addTool({
+		name: "get_system_info",
+		description: "Get system information and configuration status",
+		parameters: z.object({}),
+		execute: async () => {
+			const n8nConfigured = isN8nApiConfigured();
+			
+			return `n8n MCP Server v0.1.0
+
+System Status:
+- n8n API Integration: ${n8nConfigured ? '✅ Configured' : '❌ Not configured'}
+- Available Tools: 29
+- Workflow Tools: 5
+- Node Tools: 5
+- Connection Tools: 3
+- AI Workflow Tools: 1
+- Template Tools: 6
+- Advanced Services Tools: 9
+- System Tools: 2
+
+${!n8nConfigured ? `
+To enable full n8n integration, set these environment variables:
+- N8N_API_URL: Your n8n instance URL
+- N8N_API_KEY: Your n8n API key
+
+Without these, only documentation and validation tools are available.
+` : ''}
+
+For help with specific tools, use the get_tool_documentation tool.`;
+		},
+	});
+
+	// Add tool documentation tool
+	server.addTool({
+		name: "get_tool_documentation",
+		description: "Get detailed documentation for a specific tool",
+		parameters: z.object({
+			tool_name: z.string().describe("Name of the tool to get documentation for")
+		}),
+		execute: async (args) => {
+			const allTools = [
+				createWorkflowTool, listWorkflowsTool, getWorkflowDetailsTool, deleteWorkflowTool, validateWorkflowTool,
+				addNodeTool, editNodeTool, deleteNodeTool, listAvailableNodesTool, getN8nVersionInfoTool,
+				addConnectionTool, removeConnectionTool, addAiConnectionsTool, composeAiWorkflowTool,
+				...templateTools,
+				getNodeExamplesTool, searchNodeExamplesTool, validateNodeConfigurationTool,
+				scoreResourceLocatorTool, scoreNodeTypeSuggestionTool, scoreWorkflowValidationTool,
+				analyzePropertyDependenciesTool, getPropertyGroupsTool, validatePropertyConfigurationTool
+			];
+			const tool = allTools.find(t => t.name === args.tool_name);
+			
+			if (!tool) {
+				return `Tool '${args.tool_name}' not found. Available tools: ${allTools.map(t => t.name).join(', ')}`;
+			}
+			
+			return `Tool: ${tool.name}
+Description: ${tool.description}
+Parameters: ${JSON.stringify(tool.parameters, null, 2)}`;
+		},
+	});
+
+	// Log startup information
+	logger.info("Starting n8n MCP Server...");
+	logger.info(`n8n API Integration: ${isN8nApiConfigured() ? 'Enabled' : 'Disabled'}`);
+	logger.info(`Total tools loaded: 29`);
+
 	try {
 		await server.start({
 			transportType: "stdio",
 		});
-		console.log("✅ n8n MCP Server started successfully over stdio.");
-		console.log("   You can now connect to it using an MCP client.");
-		console.log("   Available tools: workflow management, node operations, and AI workflow composition!");
+		logger.info("✅ n8n MCP Server started successfully over stdio.");
+		logger.info("   You can now connect to it using an MCP client.");
+		logger.info("   Available tools: workflow management, node operations, and AI workflow composition!");
 	} catch (error) {
-		console.error("❌ Failed to start n8n MCP Server:", error);
+		logger.error("❌ Failed to start n8n MCP Server:", error);
 		process.exit(1);
 	}
 }
